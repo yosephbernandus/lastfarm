@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#10192a">
+    <title>Lastlight Farm — seven quiet evenings</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2310192a'/%3E%3Cpath d='M17 43c10-17 20-22 31-22-3 12-11 24-31 22Z' fill='%23efc777'/%3E%3Ccircle cx='45' cy='18' r='7' fill='%23f5e1b5'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <div class="app-shell" id="appShell">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <p class="eyebrow">A small story about showing up</p>
+          <h1>Lastlight Farm</h1>
+        </div>
+        <div class="evening-stats" aria-label="Evening status">
+          <div class="stat-block">
+            <span class="stat-label">Evening</span>
+            <strong id="dayLabel">1 / 7</strong>
+          </div>
+          <div class="stat-block energy-stat">
+            <span class="stat-label">Energy</span>
+            <strong id="energyLabel">3 / 3</strong>
+            <div class="energy-pips" id="energyPips" aria-hidden="true"></div>
+          </div>
+        </div>
+        <nav class="topbar-actions" aria-label="Game menu">
+          <button class="text-button" id="journalButton" type="button">Journal</button>
+          <button class="text-button" id="aboutButton" type="button">About</button>
+          <button class="text-button danger-text" id="restartButton" type="button">Restart</button>
+        </nav>
+      </header>
+
+      <div class="objective-strip" role="status">
+        <span class="objective-mark" aria-hidden="true">✦</span>
+        <p><strong>Tonight’s thread:</strong> <span id="objectiveText">Restore the greenhouse before the last light fades, and notice who helps.</span></p>
+        <span class="save-status" id="saveStatus">Saved locally</span>
+      </div>
+
+      <main class="game-layout">
+        <section class="scene-column" aria-label="Lastlight Farm map">
+          <div class="scene-frame">
+            <img id="sceneImage" src="./assets/lastlight-farm-moonlit-background.png" alt="A moonlit farm with a cottage, vegetable garden, woodland, and a broken glass greenhouse" width="1672" height="941">
+            <div class="scene-vignette" aria-hidden="true"></div>
+            <nav class="hotspot-layer" aria-label="Choose a farm location">
+              <button class="hotspot is-selected" data-location="mira" type="button" aria-pressed="true" style="--x:36%;--y:56%">
+                <span class="hotspot-dot" aria-hidden="true"></span>
+                <span class="hotspot-label">Cottage &amp; Mira</span>
+              </button>
+              <button class="hotspot" data-location="garden" type="button" aria-pressed="false" style="--x:53%;--y:66%">
+                <span class="hotspot-dot" aria-hidden="true"></span>
+                <span class="hotspot-label">Moon Garden</span>
+              </button>
+              <button class="hotspot" data-location="woodland" type="button" aria-pressed="false" style="--x:15%;--y:75%">
+                <span class="hotspot-dot" aria-hidden="true"></span>
+                <span class="hotspot-label">Woodland</span>
+              </button>
+              <button class="hotspot" data-location="greenhouse" type="button" aria-pressed="false" style="--x:80%;--y:56%">
+                <span class="hotspot-dot" aria-hidden="true"></span>
+                <span class="hotspot-label">Greenhouse</span>
+              </button>
+            </nav>
+          </div>
+          <div class="scene-caption">
+            <span class="caption-mark" aria-hidden="true">◌</span>
+            <p><strong>Moonlit map</strong> <span id="sceneCaption">Select a place to decide how this evening feels.</span></p>
+          </div>
+        </section>
+
+        <aside class="play-panel" aria-label="Evening decisions">
+          <section class="location-panel" aria-labelledby="locationTitle">
+            <div class="location-kicker" id="locationKicker">Near the warm window</div>
+            <h2 id="locationTitle">Cottage &amp; Mira</h2>
+            <p class="location-description" id="locationDescription">The cottage porch holds a single lantern. Mira is sorting seed packets beside it.</p>
+            <p class="location-hint" id="locationHint">Choose an activity. Moving between places costs nothing.</p>
+            <div class="action-list" id="actionList" aria-live="polite"></div>
+            <button class="end-evening-button" id="endEveningButton" type="button">
+              <span>End evening</span>
+              <span class="button-arrow" aria-hidden="true">→</span>
+            </button>
+            <p class="end-evening-note" id="endEveningNote">You can rest at any time, even with energy left.</p>
+          </section>
+
+          <section class="mira-panel" aria-labelledby="miraName">
+            <div class="mira-portrait-wrap">
+              <img src="./assets/mira-portrait.png" alt="Mira, the neighbor at Lastlight Farm" class="mira-portrait" width="1254" height="1254">
+              <span class="mira-presence" aria-hidden="true"></span>
+            </div>
+            <div class="mira-copy">
+              <div class="mira-heading">
+                <div>
+                  <p class="eyebrow">Your neighbor</p>
+                  <h2 id="miraName">Mira</h2>
+                </div>
+                <span class="mira-status" id="miraStatus">Listening</span>
+              </div>
+              <p class="mira-dialogue" id="miraDialogue" aria-live="polite">“The farm remembers small things,” Mira says. “A cleared path can be a kind of hello.”</p>
+              <p class="memory-note" id="memoryNote">Mira is waiting to see what you make of the quiet.</p>
+            </div>
+          </section>
+        </aside>
+      </main>
+
+      <footer class="app-footer">
+        <p>Seven evenings. Three sparks of energy each night.</p>
+        <p class="footer-save" id="footerSave">Your story saves on this device.</p>
+      </footer>
+    </div>
+
+    <div class="modal-screen" id="startOverlay" hidden>
+      <section class="welcome-card" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+        <div class="welcome-sigil" aria-hidden="true">✦</div>
+        <p class="eyebrow">A playable semantic-NPC story</p>
+        <h2 id="welcomeTitle">Come in before the moon climbs higher.</h2>
+        <p>Lastlight Farm has one broken greenhouse, a garden gone quiet, and a neighbor named Mira. You have seven evenings to decide what deserves your energy.</p>
+        <div class="welcome-details">
+          <span><strong>3</strong> energy each evening</span>
+          <span><strong>4</strong> places to visit</span>
+          <span><strong>∞</strong> small choices to remember</span>
+        </div>
+        <button class="primary-button" id="beginButton" type="button">Begin the first evening <span aria-hidden="true">→</span></button>
+        <p class="welcome-footnote">No account, network, or sign-in. Your save stays in this browser.</p>
+      </section>
+    </div>
+
+    <div class="modal-screen" id="endingOverlay" hidden>
+      <section class="ending-card" role="dialog" aria-modal="true" aria-labelledby="endingTitle">
+        <p class="eyebrow">The seventh evening</p>
+        <div class="ending-sigil" aria-hidden="true">☾</div>
+        <h2 id="endingTitle">The farm keeps its light</h2>
+        <p id="endingText">Your week at Lastlight Farm settles into a shape you can carry home.</p>
+        <div class="ending-stats" id="endingStats"></div>
+        <div class="ending-memory" id="endingMemory"></div>
+        <button class="primary-button" id="endingRestartButton" type="button">Begin another story <span aria-hidden="true">↺</span></button>
+        <p class="welcome-footnote">Your completed ending is saved. Restarting will ask before it clears this story.</p>
+      </section>
+    </div>
+
+    <dialog class="info-dialog" id="journalDialog" aria-labelledby="journalTitle">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">What the farm remembers</p>
+          <h2 id="journalTitle">Journal</h2>
+        </div>
+        <button class="icon-button" type="button" data-close-dialog="journalDialog" aria-label="Close journal">×</button>
+      </div>
+      <div class="journal-grid">
+        <section>
+          <h3>Inventory</h3>
+          <div class="inventory-list" id="inventoryList"></div>
+        </section>
+        <section>
+          <h3>Relationship</h3>
+          <div class="relationship-list" id="relationshipList"></div>
+        </section>
+      </div>
+      <section class="memory-section">
+        <div class="section-heading-line"><h3>Memories</h3><span id="memoryCount">0 kept</span></div>
+        <ul class="memory-list" id="memoryList"></ul>
+      </section>
+      <p class="dialog-note" id="journalLastOutcome">The first evening is waiting.</p>
+    </dialog>
+
+    <dialog class="info-dialog about-dialog" id="aboutDialog" aria-labelledby="aboutTitle">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">A note from the maker</p>
+          <h2 id="aboutTitle">About this prototype</h2>
+        </div>
+        <button class="icon-button" type="button" data-close-dialog="aboutDialog" aria-label="Close about">×</button>
+      </div>
+      <p>Lastlight Farm is a small proof of concept for a semantic NPC. Mira receives the meaning of your action and the history around it, then chooses from authored reactions. The “provider” is a deterministic local mock for this prototype.</p>
+      <p>It cannot spend energy, advance the day, change your inventory, or invent dialogue. Those rules stay in the game itself, so a future provider can be replaced without changing the farm.</p>
+      <p class="dialog-note">All progress is stored locally in this browser. There are no external services or network dependencies.</p>
+    </dialog>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>
