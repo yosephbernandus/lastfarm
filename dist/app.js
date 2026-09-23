@@ -358,6 +358,101 @@
     }
   })();
 
+  const REMOTE_PROVIDER_PATH = "/api/semantic";
+  let remoteProviderState = "unknown";
+
+  function validateRemoteInterpretation(payload) {
+    const candidate = payload && payload.interpretation && typeof payload.interpretation === "object"
+      ? payload.interpretation
+      : payload;
+    if (!candidate || typeof candidate !== "object") {
+      return null;
+    }
+    const delta = candidate.relationshipDelta;
+    if (
+      typeof candidate.interpretationId !== "string" ||
+      candidate.interpretationId.length < 1 ||
+      candidate.interpretationId.length > 120 ||
+      !delta ||
+      !Number.isInteger(delta.trust) ||
+      !Number.isInteger(delta.warmth) ||
+      delta.trust < -10 ||
+      delta.trust > 10 ||
+      delta.warmth < -10 ||
+      delta.warmth > 10 ||
+      typeof candidate.dialogueId !== "string" ||
+      !DIALOGUES[candidate.dialogueId]
+    ) {
+      return null;
+    }
+    if (candidate.memoryKey !== undefined && candidate.memoryKey !== null && !MEMORY_TEXT[candidate.memoryKey]) {
+      return null;
+    }
+    return {
+      interpretationId: candidate.interpretationId,
+      relationshipDelta: {
+        trust: delta.trust,
+        warmth: delta.warmth,
+      },
+      memoryKey: candidate.memoryKey || null,
+      dialogueId: candidate.dialogueId,
+    };
+  }
+
+  async function requestRemoteInterpretation(context, action) {
+    if (
+      remoteProviderState === "unavailable" ||
+      typeof window.fetch !== "function" ||
+      window.location.protocol === "file:"
+    ) {
+      return null;
+    }
+    const snapshot = context.state;
+    const requestBody = {
+      context: {
+        day: snapshot.day,
+        energy: snapshot.energy,
+        inventory: snapshot.inventory,
+        gardenProgress: snapshot.gardenProgress,
+        greenhouseProgress: snapshot.greenhouseProgress,
+        relationship: snapshot.relationship,
+        memories: snapshot.memories,
+        lastOutcome: snapshot.lastOutcome,
+      },
+      action: {
+        id: action.id,
+        title: action.title,
+      },
+    };
+    const controller = typeof AbortController === "function" ? new AbortController() : null;
+    const timeout = window.setTimeout(() => controller?.abort(), 900);
+    try {
+      const response = await window.fetch(REMOTE_PROVIDER_PATH, {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json" },
+        body: JSON.stringify(requestBody),
+        signal: controller?.signal,
+        credentials: "same-origin",
+      });
+      if (!response.ok) {
+        if (response.status === 404 || response.status === 405 || response.status === 503) {
+          remoteProviderState = "unavailable";
+        }
+        return null;
+      }
+      const interpretation = validateRemoteInterpretation(await response.json());
+      if (interpretation) {
+        remoteProviderState = "available";
+      }
+      return interpretation;
+    } catch (error) {
+      remoteProviderState = "unavailable";
+      return null;
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }
+
   const elements = {
     dayLabel: document.getElementById("dayLabel"),
     energyLabel: document.getElementById("energyLabel"),
@@ -695,11 +790,16 @@
     }
   }
 
-  function lockForTransition(duration = 330) {
+  function beginTransition() {
     transitionLocked = true;
     if (transitionTimer) {
       window.clearTimeout(transitionTimer);
     }
+    renderActions();
+    elements.endEveningButton.disabled = true;
+  }
+
+  function finishTransition(duration = 330) {
     transitionTimer = window.setTimeout(() => {
       transitionLocked = false;
       renderActions();
@@ -707,7 +807,7 @@
     }, duration);
   }
 
-  function commitAction(actionId) {
+  async function commitAction(actionId) {
     if (transitionLocked || state.ending) {
       return;
     }
@@ -719,13 +819,15 @@
       return;
     }
 
-    const interpretation = interpreter.interpret({
+    const context = {
       state: JSON.parse(JSON.stringify(state)),
       currentLocation,
       memories: [...state.memories],
-    }, action);
+    };
+    const fallbackInterpretation = interpreter.interpret(context, action);
 
-    lockForTransition();
+    beginTransition();
+    const interpretation = await requestRemoteInterpretation(context, action) || fallbackInterpretation;
     state.energy -= 1;
     state.actionCount += 1;
     applyActionMutation(actionId);
@@ -743,6 +845,7 @@
     };
     persistState();
     render();
+    finishTransition();
   }
 
   function deriveEnding() {
@@ -763,7 +866,7 @@
     if (transitionLocked || state.ending) {
       return;
     }
-    lockForTransition(460);
+    beginTransition();
     if (state.day >= MAX_DAYS) {
       const endingId = deriveEnding();
       const ending = ENDINGS[endingId];
@@ -774,6 +877,7 @@
       };
       persistState();
       render();
+      finishTransition(460);
       return;
     }
 
@@ -788,10 +892,11 @@
     };
     persistState();
     render();
+    finishTransition(460);
   }
 
   function selectLocation(location) {
-    if (!LOCATION_DATA[location]) {
+    if (transitionLocked || !LOCATION_DATA[location]) {
       return;
     }
     currentLocation = location;
@@ -858,7 +963,7 @@
   elements.actionList.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-action]");
     if (button) {
-      commitAction(button.dataset.action);
+      void commitAction(button.dataset.action);
     }
   });
 

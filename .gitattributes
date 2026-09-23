@@ -1,0 +1,2 @@
+# Babylon bundles embed GLSL/WGSL strings whose source intentionally preserves spaces.
+dist/game.bundle.js -whitespace

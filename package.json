@@ -1,0 +1,23 @@
+{
+  "name": "lastlight-farm",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lastlight Farm local playable prototype and optional semantic provider proxy",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "npm run build && node server.mjs",
+    "start": "npm run build && node server.mjs",
+    "test": "node --test",
+    "smoke": "npm run build && node --test && node scripts/smoke.mjs"
+  },
+  "dependencies": {
+    "@babylonjs/core": "^9.27.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}
